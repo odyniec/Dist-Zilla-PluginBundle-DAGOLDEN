@@ -1,5 +1,4 @@
 requires "Dist::Zilla" => "5";
-requires "Dist::Zilla::Plugin::Authority" => "1.006";
 requires "Dist::Zilla::Plugin::Bugtracker" => "1.110";
 requires "Dist::Zilla::Plugin::CPANFile" => "0";
 requires "Dist::Zilla::Plugin::CheckChangesHasContent" => "0";
@@ -16,7 +15,7 @@ requires "Dist::Zilla::Plugin::MetaProvides::Package" => "1.14";
 requires "Dist::Zilla::Plugin::MinimumPerl" => "0";
 requires "Dist::Zilla::Plugin::OurPkgVersion" => "0.004";
 requires "Dist::Zilla::Plugin::PodWeaver" => "0";
-requires "Dist::Zilla::Plugin::ReadmeFromPod" => "0.19";
+requires "Dist::Zilla::Plugin::ReadmeAnyFromPod" => "0";
 requires "Dist::Zilla::Plugin::TaskWeaver" => "0.101620";
 requires "Dist::Zilla::Plugin::Test::Compile" => "2.036";
 requires "Dist::Zilla::Plugin::Test::MinimumVersion" => "2.000003";
@@ -39,7 +38,6 @@ requires "Pod::Weaver::Plugin::Encoding" => "0";
 requires "Pod::Weaver::Plugin::WikiDoc" => "0";
 requires "Pod::Weaver::Section::Contributors" => "0.001";
 requires "Pod::Weaver::Section::Support" => "1.001";
-requires "Pod::Wordlist" => "1.10";
 requires "Test::Portability::Files" => "0.06";
 requires "autodie" => "2.00";
 requires "namespace::autoclean" => "0.09";
@@ -49,8 +47,12 @@ requires "warnings" => "0";
 
 on 'test' => sub {
   requires "ExtUtils::MakeMaker" => "0";
+  requires "File::Spec" => "0";
   requires "File::Spec::Functions" => "0";
+  requires "File::Temp" => "0";
   requires "File::pushd" => "0";
+  requires "IO::Handle" => "0";
+  requires "IPC::Open3" => "0";
   requires "List::Util" => "0";
   requires "Path::Tiny" => "0";
   requires "Test::DZil" => "0";
@@ -68,13 +70,8 @@ on 'configure' => sub {
 };
 
 on 'develop' => sub {
-  requires "File::Spec" => "0";
-  requires "File::Temp" => "0";
-  requires "IO::Handle" => "0";
-  requires "IPC::Open3" => "0";
   requires "Pod::Coverage::TrustPod" => "0";
   requires "Test::CPAN::Meta" => "0";
-  requires "Test::More" => "0";
   requires "Test::Pod" => "1.41";
   requires "Test::Pod::Coverage" => "1.08";
 };
