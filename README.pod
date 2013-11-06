@@ -1,0 +1,315 @@
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+Dist::Zilla::PluginBundle::ODYNIEC - Dist::Zilla configuration the way ODYNIEC does it
+
+=head1 VERSION
+
+version 0.010
+
+=head1 SYNOPSIS
+
+  # in dist.ini
+  [@ODYNIEC]
+
+=head1 DESCRIPTION
+
+This is a L<Dist::Zilla> PluginBundle based on
+L<Dist::Zilla::PluginBundle::DAGOLDEN>, which was created by David Golden.
+It is roughly equivalent to the following dist.ini:
+
+  ; Version provider
+  [Git::NextVersion]  ; Get version from last release tag
+  version_regexp = ^v(.+)$
+
+  ; Collect contributors list
+  [ContributorsFromGit]
+
+  ; Choose files to include
+  [Git::GatherDir]    ; Everything from git ls-files
+  exclude_filename = META.json  ; Skip this generated file
+  [PruneCruft]        ; Default stuff to skip
+  [ManifestSkip]      ; If -f MANIFEST.SKIP, skip those, too
+
+  ; File modifications
+  [OurPkgVersion]     ; Add $VERSION = ... to all files
+  [InsertCopyright    ; Add copyright at "# COPYRIGHT"
+  [PodWeaver]         ; Generate Pod
+  config_plugin = @ODYNIEC ; For Pod::WikiDoc
+
+  ; generated files
+  [License]           ; Boilerplate license (core)
+  [ReadmeAnyFromPod / ReadmePodInRoot]     ; For README.pod
+  type = pod
+
+  ; Generated t/ tests
+  [Test::ReportPrereqs]   ; Show prereqs in automated test output
+
+  ; Generated xt/ tests
+  [Test::MinimumVersion]  ; xt/release/minimum-version.t
+  max_target_perl = 5.010 ; Don't use syntax/features past 5.10
+  [Test::PodSpelling] ; xt/author/pod-spell.t
+  [Test::Perl::Critic]; xt/author/critic.t
+  [MetaTests]         ; xt/release/meta-yaml.t (core)
+  [PodSyntaxTests]    ; xt/release/pod-syntax.t (core)
+  [PodCoverageTests]  ; xt/release/pod-coverage.t (core)
+  [Test::Portability] ; xt/release/portability.t (of file name)
+  options = test_one_dot = 0
+  [Test::Version]     ; xt/release/test-version.t
+  [Test::Compile]     ; xt/author/00-compile.t
+  fake_home = 1       ; Fake $ENV{HOME} just in case
+
+  ; Metadata
+  [AutoPrereqs]       ; Find prereqs from code (core)
+  skip = ^t::lib
+
+  [MinimumPerl]       ; Determine minimum Perl version
+
+  [MetaNoIndex]       ; Sets 'no_index' in META
+  directory = t
+  directory = xt
+  directory = examples
+  directory = corpus
+  package = DB        ; Just in case
+
+  [GithubMeta]        ; Set META resources
+  remote = origin
+  remote = github
+  issues = 1
+
+  [MetaProvides::Package] ; Add 'provides' to META files
+  meta_noindex = 1        ; Respect prior no_index directives
+
+  [MetaYAML]          ; Generate META.yml (v1.4) (core)
+  [MetaJSON]          ; Generate META.json (v2) (core)
+  [CPANFile]          ; Generate cpanfile
+
+  ; Build system
+  [ExecDir]           ; Include 'bin/*' as executables (core)
+  [ShareDir]          ; Include 'share/' for File::ShareDir (core)
+  [MakeMaker]         ; Create Makefile.PL (core)
+  eumm_version = 6.17
+
+  ; Copy files from build back to root for inclusion in VCS
+  [CopyFilesFromBuild]
+  copy = cpanfile
+
+  ; Manifest (after all generated files)
+  [Manifest]          ; Create MANIFEST (core)
+
+  ; Before release
+  [Git::Check]        ; Ensure all files checked in
+  allow_dirty = dist.ini
+  allow_dirty = Changes
+  allow_dirty = cpanfile
+  allow_dirty = README.pod
+
+  [CheckMetaResources]     ; Ensure META has 'resources' data
+  [CheckPrereqsIndexed]    ; Ensure prereqs are on CPAN
+  [CheckChangesHasContent] ; Ensure Changes has been updated
+  [CheckExtraTests]   ; Ensure xt/ tests pass
+  [TestRelease]       ; Ensure t/ tests pass (core)
+  [ConfirmRelease]    ; Prompt before uploading (core)
+
+  ; Release
+  [UploadToCPAN]      ; Upload to CPAN (core)
+
+  ; After release
+
+  ; NextRelease acts *during* pre-release to write $VERSION and
+  ; timestamp to Changes and  *after* release to add a new {{$NEXT}}
+  ; section, so to act at the right time after release, it must actually
+  ; come after Commit_Dirty_Files but before Commit_Changes in the
+  ; dist.ini.  It will still act during pre-release as usual
+
+  [NextRelease]
+  format = %-9v %{yyyy-MM-dd}d
+
+  [Git::Commit] ; Commit Changes
+  allow_dirty = dist.ini
+  allow_dirty = Changes
+  allow_dirty = README.pod
+  allow_dirty = cpanfile
+
+  [Git::Tag]          ; Tag repo with custom tag
+  tag_message = Version %v
+
+  [Git::Push]         ; Push repo to remote
+
+=head1 USAGE
+
+To use this PluginBundle, just add it to your dist.ini.  You can provide
+the following options:
+
+=over 4
+
+=item *
+
+C<is_task> -- this indicates whether C<TaskWeaver> or C<PodWeaver> should be used.
+
+Default is 0.
+
+=item *
+
+C<auto_prereq> -- this indicates whether C<AutoPrereqs> should be used or not.  Default is 1.
+
+=item *
+
+C<darkpan> -- for private code; uses C<FakeRelease> and fills in dummy repo/bugtracker data
+
+=item *
+
+C<fake_release> -- swaps C<FakeRelease> for C<UploadToCPAN>. Mostly useful for testing a dist.ini without risking a real release.
+
+=item *
+
+C<git_remote> -- where to push after release
+
+=item *
+
+C<github_issues> -- whether to use github issue tracker. Defaults is 1.
+
+=item *
+
+C<stopwords> -- add stopword for C<Test::PodSpelling> (can be repeated)
+
+=item *
+
+C<tag_format> -- given to C<Git::Tag>. Default is 'v%v'.
+
+=item *
+
+C<weaver_config> -- specifies a L<Pod::Weaver> bundle. Defaults to @ODYNIEC.
+
+=item *
+
+C<version_regexp> -- given to L<Git::NextVersion>. Default is '^v(.+)$'
+
+=item *
+
+C<no_git> -- bypass all git-dependent plugins
+
+=item *
+
+C<no_critic> -- omit C<Test::Perl::Critic> tests
+
+=item *
+
+C<no_spellcheck> -- omit C<Test::PodSpelling> tests
+
+=item *
+
+C<no_coverage> -- omit PodCoverage tests
+
+=item *
+
+C<no_minimum_perl> -- omit C<Test::MinimumVersion> tests
+
+=back
+
+When running without git, C<GatherDir> is used instead of C<Git::GatherDir>,
+C<AutoVersion> is used instead of C<Git::NextVersion>, and all git check and
+commit operations are disabled.
+
+This PluginBundle now supports C<ConfigSlicer>, so you can pass in options to the
+plugins used like this:
+
+  [@ODYNIEC]
+  Test::MinimumVersion.max_target_perl = 5.014
+  ExecDir.dir = scripts
+
+This PluginBundle also supports C<PluginRemover>, so dropping a plugin is as easy as this:
+
+  [@ODYNIEC]
+  -remove = Test::Portability
+
+=for Pod::Coverage configure mvp_multivalue_args
+
+=head1 SEE ALSO
+
+=over 4
+
+=item *
+
+L<Dist::Zilla>
+
+=item *
+
+L<Dist::Zilla::Plugin::PodWeaver>
+
+=item *
+
+L<Dist::Zilla::Plugin::TaskWeaver>
+
+=back
+
+=for :stopwords cpan testmatrix url annocpan anno bugtracker rt cpants kwalitee diff irc mailto metadata placeholders metacpan
+
+=head1 SUPPORT
+
+=head2 Bugs / Feature Requests
+
+Please report any bugs or feature requests through the issue tracker
+at L<https://github.com/odyniec/p5-Dist-Zilla-PluginBundle-ODYNIEC/issues>.
+You will be notified automatically of any progress on your issue.
+
+=head2 Source Code
+
+This is open source software.  The code repository is available for
+public review and contribution under the terms of the license.
+
+L<https://github.com/odyniec/p5-Dist-Zilla-PluginBundle-ODYNIEC>
+
+  git clone https://github.com/odyniec/p5-Dist-Zilla-PluginBundle-ODYNIEC.git
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+David Golden <dagolden@cpan.org>
+
+=item *
+
+Michal Wojciechowski <odyniec@cpan.org>
+
+=back
+
+=head1 CONTRIBUTORS
+
+=over 4
+
+=item *
+
+Christian Walde <walde.christian@googlemail.com>
+
+=item *
+
+Eric Johnson <eric.git@iijo.org>
+
+=item *
+
+Karen Etheridge <ether@cpan.org>
+
+=item *
+
+Michal Wojciechowski <odyniec@odyniec.net>
+
+=item *
+
+Philippe Bruhat (BooK) <book@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2013 by Michal Wojciechowski.
+
+This is free software, licensed under:
+
+  The Apache License, Version 2.0, January 2004
+
