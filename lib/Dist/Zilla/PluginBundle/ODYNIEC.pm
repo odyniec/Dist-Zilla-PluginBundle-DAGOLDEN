@@ -532,22 +532,22 @@ To use this PluginBundle, just add it to your dist.ini.  You can provide
 the following options:
 
 =for :list
-* C<is_task> — this indicates whether C<TaskWeaver> or C<PodWeaver> should be used.
+* C<is_task> -- this indicates whether C<TaskWeaver> or C<PodWeaver> should be used.
 Default is 0.
-* C<auto_prereq> — this indicates whether C<AutoPrereqs> should be used or not.  Default is 1.
-* C<darkpan> — for private code; uses C<FakeRelease> and fills in dummy repo/bugtracker data
-* C<fake_release> — swaps C<FakeRelease> for C<UploadToCPAN>. Mostly useful for testing a dist.ini without risking a real release.
-* C<git_remote> — where to push after release
-* C<github_issues> — whether to use github issue tracker. Defaults is 1.
-* C<stopwords> — add stopword for C<Test::PodSpelling> (can be repeated)
-* C<tag_format> — given to C<Git::Tag>. Default is 'v%v'.
-* C<weaver_config> — specifies a L<Pod::Weaver> bundle. Defaults to @ODYNIEC.
-* C<version_regexp> — given to L<Git::NextVersion>. Default is '^v(.+)$'
-* C<no_git> — bypass all git-dependent plugins
-* C<no_critic> — omit C<Test::Perl::Critic> tests
-* C<no_spellcheck> — omit C<Test::PodSpelling> tests
-* C<no_coverage> — omit PodCoverage tests
-* C<no_minimum_perl> — omit C<Test::MinimumVersion> tests
+* C<auto_prereq> -- this indicates whether C<AutoPrereqs> should be used or not.  Default is 1.
+* C<darkpan> -- for private code; uses C<FakeRelease> and fills in dummy repo/bugtracker data
+* C<fake_release> -- swaps C<FakeRelease> for C<UploadToCPAN>. Mostly useful for testing a dist.ini without risking a real release.
+* C<git_remote> -- where to push after release
+* C<github_issues> -- whether to use github issue tracker. Defaults is 1.
+* C<stopwords> -- add stopword for C<Test::PodSpelling> (can be repeated)
+* C<tag_format> -- given to C<Git::Tag>. Default is 'v%v'.
+* C<weaver_config> -- specifies a L<Pod::Weaver> bundle. Defaults to @ODYNIEC.
+* C<version_regexp> -- given to L<Git::NextVersion>. Default is '^v(.+)$'
+* C<no_git> -- bypass all git-dependent plugins
+* C<no_critic> -- omit C<Test::Perl::Critic> tests
+* C<no_spellcheck> -- omit C<Test::PodSpelling> tests
+* C<no_coverage> -- omit PodCoverage tests
+* C<no_minimum_perl> -- omit C<Test::MinimumVersion> tests
 
 When running without git, C<GatherDir> is used instead of C<Git::GatherDir>,
 C<AutoVersion> is used instead of C<Git::NextVersion>, and all git check and
