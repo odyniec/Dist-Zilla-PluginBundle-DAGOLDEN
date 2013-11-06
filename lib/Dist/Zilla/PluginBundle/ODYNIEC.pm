@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-package Dist::Zilla::PluginBundle::DAGOLDEN;
+package Dist::Zilla::PluginBundle::ODYNIEC;
 # VERSION
 
 # Dependencies
@@ -15,7 +15,6 @@ use Dist::Zilla 5; # Number 5 is ALIVE!
 use Dist::Zilla::PluginBundle::Filter ();
 use Dist::Zilla::PluginBundle::Git 1.121010 ();
 
-use Dist::Zilla::Plugin::Authority 1.006  ();
 use Dist::Zilla::Plugin::Bugtracker 1.110 ();
 use Dist::Zilla::Plugin::CheckChangesHasContent ();
 use Dist::Zilla::Plugin::CheckExtraTests        ();
@@ -32,7 +31,7 @@ use Dist::Zilla::Plugin::MetaProvides::Package 1.14 (); # hides private packages
 use Dist::Zilla::Plugin::MinimumPerl ();
 use Dist::Zilla::Plugin::OurPkgVersion 0.004 ();        # TRIAL comment support
 use Dist::Zilla::Plugin::PodWeaver ();
-use Dist::Zilla::Plugin::ReadmeFromPod 0.19            (); # for dzil v5
+use Dist::Zilla::Plugin::ReadmeAnyFromPod ();
 use Dist::Zilla::Plugin::TaskWeaver 0.101620           ();
 use Dist::Zilla::Plugin::Test::Compile 2.036           (); # various features
 use Dist::Zilla::Plugin::Test::MinimumVersion 2.000003 ();
@@ -135,7 +134,7 @@ has tag_format => (
     isa     => 'Str',
     lazy    => 1,
     default => sub {
-        exists $_[0]->payload->{tag_format} ? $_[0]->payload->{tag_format} : 'release-%v',;
+        exists $_[0]->payload->{tag_format} ? $_[0]->payload->{tag_format} : 'v%v',;
     },
 );
 
@@ -146,7 +145,7 @@ has version_regexp => (
     default => sub {
         exists $_[0]->payload->{version_regexp}
           ? $_[0]->payload->{version_regexp}
-          : '^release-(.+)$',
+          : '^v(.+)$',
           ;
     },
 );
@@ -155,7 +154,7 @@ has weaver_config => (
     is      => 'ro',
     isa     => 'Str',
     lazy    => 1,
-    default => sub { $_[0]->payload->{weaver_config} || '@DAGOLDEN' },
+    default => sub { $_[0]->payload->{weaver_config} || '@ODYNIEC' },
 );
 
 has github_issues => (
@@ -176,15 +175,6 @@ has git_remote => (
     },
 );
 
-has authority => (
-    is      => 'ro',
-    isa     => 'Str',
-    lazy    => 1,
-    default => sub {
-        exists $_[0]->payload->{authority} ? $_[0]->payload->{authority} : 'cpan:DAGOLDEN';
-    },
-);
-
 has darkpan => (
     is      => 'ro',
     isa     => 'Bool',
@@ -194,129 +184,130 @@ has darkpan => (
     },
 );
 
-has no_bugtracker => ( # XXX deprecated
-    is      => 'ro',
-    isa     => 'Bool',
-    lazy    => 1,
-    default => 0,
-);
-
 sub configure {
     my $self = shift;
 
-    my @push_to = ('origin');
-    push @push_to, $self->git_remote if $self->git_remote ne 'origin';
+    my @push_to = ();
+    push @push_to, $self->git_remote;
 
     $self->add_plugins(
 
-        # version number
+        # Version provider
         (
             $self->no_git
-            ? 'AutoVersion'
-            : [ 'Git::NextVersion' => { version_regexp => $self->version_regexp } ]
+            ? 'AutoVersion' # (core)
+            : [ 'Git::NextVersion' =>
+                { version_regexp => $self->version_regexp } ]
+                # Get version from last release tag
         ),
 
-        # contributors
+        # Collect contributors list
         (
             $self->no_git
             ? ()
             : 'ContributorsFromGit'
         ),
 
-        # gather and prune
+        # Choose files to include
         (
             $self->no_git
             ? [
                 'GatherDir' =>
-                  { exclude_filename => [qw/README.pod README.mkdn META.json cpanfile/] }
-              ] # core
+                  { exclude_filename => [qw/META.json cpanfile/] }
+              ] # (core)
             : [
                 'Git::GatherDir' =>
-                  { exclude_filename => [qw/README.pod README.mkdn META.json cpanfile/] }
-            ]
+                  { exclude_filename => [qw/META.json cpanfile/] }
+            ] # Everything from git ls-files
         ),
-        'PruneCruft',   # core
-        'ManifestSkip', # core
+        'PruneCruft',   # Default stuff to skip (core)
+        'ManifestSkip', # If -f MANIFEST.SKIP, skip those, too (core)
 
-        # file munging
-        'OurPkgVersion',
-        'InsertCopyright',
+        # File modifications
+        'OurPkgVersion',    # Add $VERSION = ... to all files
+        'InsertCopyright',  # Add copyright at "# COPYRIGHT"
         (
             $self->is_task
             ? 'TaskWeaver'
             : [ 'PodWeaver' => { config_plugin => $self->weaver_config } ]
+            # Generate Pod
         ),
 
-        # generated distribution files
-        'ReadmeFromPod', # in build dir
-        'License',       # core
-
-        # generated t/ tests
+        # Generated distribution files
+        'License',       # Boilerplate license (core)
         [
-            'Test::Compile' => {
-                fake_home => 1,
-                xt_mode   => 1,
-            }
+            'ReadmeAnyFromPod' => 'ReadmePodInRoot' => { type => 'pod' }
+            # For README.pod
         ],
+        
+        # Generated t/ tests
+        'Test::ReportPrereqs',  # Show prereqs in automated test output
+
+        # Generated xt/ tests
         (
             $self->no_minimum_perl
             ? ()
             : [ 'Test::MinimumVersion' => { max_target_perl => '5.010' } ]
+            # Don't use syntax/features past 5.10
         ),
-        'Test::ReportPrereqs',
-
-        # generated xt/ tests
         (
             $self->no_spellcheck ? ()
             : [ 'Test::PodSpelling' => { stopwords => $self->stopwords } ]
+            # xt/author/pod-spell.t
         ),
         (
             $self->no_critic ? ()
             : ('Test::Perl::Critic')
+            # xt/author/critic.t
         ),
-        'MetaTests',      # core
-        'PodSyntaxTests', # core
+        'MetaTests',      # xt/release/meta-yaml.t (core)
+        'PodSyntaxTests', # xt/release/pod-syntax.t (core)
         (
             $self->no_coverage
             ? ()
-            : ('PodCoverageTests') # core
+            : ('PodCoverageTests') # xt/release/pod-coverage.t (core)
         ),
+        # xt/release/portability.t (of file name)
         [ 'Test::Portability' => { options => "test_one_dot = 0" } ],
-        'Test::Version',
-
-        # metadata
+        'Test::Version',  # xt/release/test-version.t
         [
-            'Authority' => {
-                authority  => $self->authority,
-                do_munging => 0,
+            'Test::Compile' => {
+                fake_home => 1,   # Fake $ENV{HOME} just in case
             }
         ],
-        'MinimumPerl',
+
+        # Metadata
         (
             $self->auto_prereq
             ? [ 'AutoPrereqs' => { skip => "^t::lib" } ]
+            # Find prereqs from code (core)
             : ()
         ),
+        'MinimumPerl',  # Determine minimum Perl version
         [
+            # Sets 'no_index' in META
             MetaNoIndex => {
                 directory => [qw/t xt examples corpus/],
-                'package' => [qw/DB/]
+                'package' => [qw/DB/]   # Just in case
             }
         ],
-        [ 'MetaProvides::Package' => { meta_noindex => 1 } ], # AFTER MetaNoIndex
         (
             $self->darkpan
             ? ()
             : [
+                # Set META resources
                 GithubMeta => {
                     remote => [qw(origin github)],
                     issues => $self->github_issues,
                 }
             ],
         ),
+        # Add 'provides' to META files
+        [ 'MetaProvides::Package' =>
+            { meta_noindex => 1 } ],  # Respect prior no_index directives
         (
             ( $self->no_git || $self->darkpan || !$self->github_issues ) ? (
-                # fake out Pod::Weaver::Section::Support
+                # Fake out Pod::Weaver::Section::Support
                 [
                     'Bugtracker' =>
                       { mailto => '', $self->darkpan ? ( web => "http://localhost/" ) : () }
@@ -327,7 +318,7 @@ sub configure {
         (
             ( $self->no_git || $self->darkpan )
             ? (
-                # fake out Pod::Weaver::Section::Support
+                # Fake out Pod::Weaver::Section::Support
                 [
                     'MetaResources' => { map { ; "repository.$_" => "http://localhost/" } qw/url web/ }
                 ],
@@ -335,64 +326,59 @@ sub configure {
             : ()
         ),
 
-        'MetaYAML', # core
-        'MetaJSON', # core
+        'MetaYAML', # Generate META.yml (v1.4) (core)
+        'MetaJSON', # Generate META.json (vw) (core)
         'CPANFile',
 
-        # build system
-        'ExecDir',  # core
-        'ShareDir', # core
-        [ 'MakeMaker' => { eumm_version => '6.17' } ], # core
+        # Build system
+        'ExecDir',  # Include 'bin/*' as executables (core)
+        'ShareDir', # Include 'share/' for File::ShareDir (core)
+        [ 'MakeMaker' => { eumm_version => '6.17' } ], # Create Makefile.PL (core)
 
-        # copy files from build back to root for inclusion in VCS
+        # Copy files from build back to root for inclusion in VCS
         [ CopyFilesFromBuild => { copy => 'cpanfile', } ],
 
-        # manifest -- must come after all generated files
-        'Manifest',                                    # core
+        # Manifest (after all generated files)
+        'Manifest',   # Create MANIFEST (core)
 
-        # before release
+        # Before release
         (
             $self->no_git
             ? ()
-            : [ 'Git::Check' => { allow_dirty => [qw/dist.ini Changes cpanfile/] } ]
+            : [ 'Git::Check' => { allow_dirty => [qw/dist.ini Changes cpanfile README.pod/] } ]
+            # Ensure all files checked in
         ),
-        'CheckMetaResources',
-        'CheckPrereqsIndexed',
-        'CheckChangesHasContent',
-        'CheckExtraTests',
-        'TestRelease',                                 # core
-        'ConfirmRelease',                              # core
+        'CheckMetaResources',       # Ensure META has 'resources' data
+        'CheckPrereqsIndexed',      # Ensure prereqs are on CPAN
+        'CheckChangesHasContent',   # Ensure Changes has been updated
+        'CheckExtraTests',          # Ensure xt/tests pass
+        'TestRelease',              # Ensure t/ tests pass (core)
+        'ConfirmRelease',           # Prompt before uploading (core)
 
-        # release
-        ( $self->fake_release || $self->darkpan ? 'FakeRelease' : 'UploadToCPAN' ), # core
+        # Release
+        ( $self->fake_release || $self->darkpan ? 'FakeRelease' : 'UploadToCPAN' ),
+        # Upload to CPAN (core)
 
-        # after release
-        # Note -- NextRelease is here to get the ordering right with
-        # git actions.  It is *also* a file munger that acts earlier
+        # After release
 
-        # commit dirty Changes, dist.ini, README.pod, META.json
+        [ 'NextRelease' => { format => '%-9v %{yyyy-MM-dd}d' } ],
+
         (
             $self->no_git
             ? ()
             : (
+                [ 'Git::Commit' =>
+                    { allow_dirty => [qw/dist.ini Changes README.pod cpanfile/] } ],
+                # Commit Changes
                 [
-                    'Git::Commit' => 'Commit_Dirty_Files' =>
-                      { allow_dirty => [qw/dist.ini Changes cpanfile/] }
+                    'Git::Tag' => {
+                        tag_format => $self->tag_format,
+                        tag_message => 'Version %v'
+                    }
                 ],
-                [ 'Git::Tag' => { tag_format => $self->tag_format } ],
-            )
-        ),
-
-        # bumps Changes
-        'NextRelease', # core (also munges files)
-
-        (
-            $self->no_git
-            ? ()
-            : (
-                [ 'Git::Commit' => 'Commit_Changes' => { commit_msg => "bump Changes" } ],
-
+                # Tag repo with custom tag
                 [ 'Git::Push' => { push_to => \@push_to } ],
+                # Push repo to remote
             )
         ),
 
@@ -404,7 +390,7 @@ __PACKAGE__->meta->make_immutable;
 
 1;
 
-# ABSTRACT: Dist::Zilla configuration the way DAGOLDEN does it
+# ABSTRACT: Dist::Zilla configuration the way ODYNIEC does it
 # COPYRIGHT
 
 __END__
@@ -414,119 +400,111 @@ __END__
 =head1 SYNOPSIS
 
   # in dist.ini
-  [@DAGOLDEN]
+  [@ODYNIEC]
 
 =head1 DESCRIPTION
 
-This is a L<Dist::Zilla> PluginBundle.  It is roughly equivalent to the
-following dist.ini:
+This is a L<Dist::Zilla> PluginBundle based on
+L<Dist::Zilla::PluginBundle::DAGOLDEN>, which was created by David Golden.
+It is roughly equivalent to the following dist.ini:
 
-  ; version provider
-  [Git::NextVersion]  ; get version from last release tag
-  version_regexp = ^release-(.+)$
+  ; Version provider
+  [Git::NextVersion]  ; Get version from last release tag
+  version_regexp = ^v(.+)$
 
-  ; collect contributors list
+  ; Collect contributors list
   [ContributorsFromGit]
 
-  ; choose files to include
-  [Git::GatherDir]         ; everything from git ls-files
-  exclude_filename = README.pod   ; skip this generated file
-  exclude_filename = META.json    ; skip this generated file
+  ; Choose files to include
+  [Git::GatherDir]    ; Everything from git ls-files
+  exclude_filename = META.json  ; Skip this generated file
+  [PruneCruft]        ; Default stuff to skip
+  [ManifestSkip]      ; If -f MANIFEST.SKIP, skip those, too
 
-  [PruneCruft]        ; default stuff to skip
-  [ManifestSkip]      ; if -f MANIFEST.SKIP, skip those, too
-
-  ; file modifications
-  [OurPkgVersion]     ; add $VERSION = ... to all files
-  [InsertCopyright    ; add copyright at "# COPYRIGHT"
-  [PodWeaver]         ; generate Pod
-  config_plugin = @DAGOLDEN ; my own plugin allows Pod::WikiDoc
+  ; File modifications
+  [OurPkgVersion]     ; Add $VERSION = ... to all files
+  [InsertCopyright    ; Add copyright at "# COPYRIGHT"
+  [PodWeaver]         ; Generate Pod
+  config_plugin = @ODYNIEC ; For Pod::WikiDoc
 
   ; generated files
-  [License]           ; boilerplate license
-  [ReadmeFromPod]     ; from Pod (runs after PodWeaver)
+  [License]           ; Boilerplate license (core)
+  [ReadmeAnyFromPod / ReadmePodInRoot]     ; For README.pod
+  type = pod
 
-  ; t tests
-  [Test::ReportPrereqs]   ; show prereqs in automated test output
+  ; Generated t/ tests
+  [Test::ReportPrereqs]   ; Show prereqs in automated test output
 
-  ; xt tests
+  ; Generated xt/ tests
   [Test::MinimumVersion]  ; xt/release/minimum-version.t
-  max_target_perl = 5.010 ; don't use syntax/features past 5.10
+  max_target_perl = 5.010 ; Don't use syntax/features past 5.10
   [Test::PodSpelling] ; xt/author/pod-spell.t
   [Test::Perl::Critic]; xt/author/critic.t
-  [MetaTests]         ; xt/release/meta-yaml.t
-  [PodSyntaxTests]    ; xt/release/pod-syntax.t
-  [PodCoverageTests]  ; xt/release/pod-coverage.t
+  [MetaTests]         ; xt/release/meta-yaml.t (core)
+  [PodSyntaxTests]    ; xt/release/pod-syntax.t (core)
+  [PodCoverageTests]  ; xt/release/pod-coverage.t (core)
   [Test::Portability] ; xt/release/portability.t (of file name)
   options = test_one_dot = 0
   [Test::Version]     ; xt/release/test-version.t
   [Test::Compile]     ; xt/author/00-compile.t
-  fake_home = 1       ; fakes $ENV{HOME} just in case
-  xt_mode = 1         ; make sure all files compile
+  fake_home = 1       ; Fake $ENV{HOME} just in case
 
-  ; metadata
-  [AutoPrereqs]       ; find prereqs from code
+  ; Metadata
+  [AutoPrereqs]       ; Find prereqs from code (core)
   skip = ^t::lib
 
-  [Authority]
-  authority = cpan:DAGOLDEN
-  do_munging = 0
+  [MinimumPerl]       ; Determine minimum Perl version
 
-  [MinimumPerl]       ; determine minimum perl version
-
-  [MetaNoIndex]       ; sets 'no_index' in META
+  [MetaNoIndex]       ; Sets 'no_index' in META
   directory = t
   directory = xt
   directory = examples
   directory = corpus
-  package = DB        ; just in case
+  package = DB        ; Just in case
 
-  [GithubMeta]        ; set META resources
+  [GithubMeta]        ; Set META resources
   remote = origin
   remote = github
   issues = 1
 
-  [MetaProvides::Package] ; add 'provides' to META files
-  meta_noindex = 1        ; respect prior no_index directives
+  [MetaProvides::Package] ; Add 'provides' to META files
+  meta_noindex = 1        ; Respect prior no_index directives
 
-  [MetaYAML]          ; generate META.yml (v1.4)
-  [MetaJSON]          ; generate META.json (v2)
-  [CPANFile]          ; generate cpanfile
+  [MetaYAML]          ; Generate META.yml (v1.4) (core)
+  [MetaJSON]          ; Generate META.json (v2) (core)
+  [CPANFile]          ; Generate cpanfile
 
-  ; build system
-  [ExecDir]           ; include 'bin/*' as executables
-  [ShareDir]          ; include 'share/' for File::ShareDir
-  [MakeMaker]         ; create Makefile.PL
+  ; Build system
+  [ExecDir]           ; Include 'bin/*' as executables (core)
+  [ShareDir]          ; Include 'share/' for File::ShareDir (core)
+  [MakeMaker]         ; Create Makefile.PL (core)
   eumm_version = 6.17
 
-  ; manifest (after all generated files)
-  [Manifest]          ; create MANIFEST
-
-  ; copy cpanfile back to repo dis
+  ; Copy files from build back to root for inclusion in VCS
   [CopyFilesFromBuild]
   copy = cpanfile
 
-  ; before release
-  [Git::Check]        ; ensure all files checked in
+  ; Manifest (after all generated files)
+  [Manifest]          ; Create MANIFEST (core)
+
+  ; Before release
+  [Git::Check]        ; Ensure all files checked in
   allow_dirty = dist.ini
   allow_dirty = Changes
   allow_dirty = cpanfile
+  allow_dirty = README.pod
 
-  [CheckMetaResources]     ; ensure META has 'resources' data
-  [CheckPrereqsIndexed]    ; ensure prereqs are on CPAN
-  [CheckChangesHasContent] ; ensure Changes has been updated
-  [CheckExtraTests]   ; ensure xt/ tests pass
-  [TestRelease]       ; ensure t/ tests pass
-  [ConfirmRelease]    ; prompt before uploading
+  [CheckMetaResources]     ; Ensure META has 'resources' data
+  [CheckPrereqsIndexed]    ; Ensure prereqs are on CPAN
+  [CheckChangesHasContent] ; Ensure Changes has been updated
+  [CheckExtraTests]   ; Ensure xt/ tests pass
+  [TestRelease]       ; Ensure t/ tests pass (core)
+  [ConfirmRelease]    ; Prompt before uploading (core)
 
-  ; releaser
-  [UploadToCPAN]      ; uploads to CPAN
+  ; Release
+  [UploadToCPAN]      ; Upload to CPAN (core)
 
-  ; after release
-  [Git::Commit / Commit_Dirty_Files] ; commit Changes (as released)
-
-  [Git::Tag]          ; tag repo with custom tag
-  tag_format = release-%v
+  ; After release
 
   ; NextRelease acts *during* pre-release to write $VERSION and
   ; timestamp to Changes and  *after* release to add a new {{$NEXT}}
@@ -535,11 +513,18 @@ following dist.ini:
   ; dist.ini.  It will still act during pre-release as usual
 
   [NextRelease]
+  format = %-9v %{yyyy-MM-dd}d
 
-  [Git::Commit / Commit_Changes] ; commit Changes (for new dev)
+  [Git::Commit] ; Commit Changes
+  allow_dirty = dist.ini
+  allow_dirty = Changes
+  allow_dirty = README.pod
+  allow_dirty = cpanfile
 
-  [Git::Push]         ; push repo to remote
-  push_to = origin
+  [Git::Tag]          ; Tag repo with custom tag
+  tag_message = Version %v
+
+  [Git::Push]         ; Push repo to remote
 
 =head1 USAGE
 
@@ -549,25 +534,20 @@ the following options:
 =for :list
 * C<is_task> — this indicates whether C<TaskWeaver> or C<PodWeaver> should be used.
 Default is 0.
-* C<authority> — specifies the C<x_authority> field for pause.  Defaults to 'cpan:DAGOLDEN'.
 * C<auto_prereq> — this indicates whether C<AutoPrereqs> should be used or not.  Default is 1.
 * C<darkpan> — for private code; uses C<FakeRelease> and fills in dummy repo/bugtracker data
 * C<fake_release> — swaps C<FakeRelease> for C<UploadToCPAN>. Mostly useful for testing a dist.ini without risking a real release.
 * C<git_remote> — where to push after release
 * C<github_issues> — whether to use github issue tracker. Defaults is 1.
 * C<stopwords> — add stopword for C<Test::PodSpelling> (can be repeated)
-* C<tag_format> — given to C<Git::Tag>.  Default is 'release-%v' to be more
-robust than just the version number when parsing versions for
-L<Git::NextVersion>
-* C<weaver_config> — specifies a L<Pod::Weaver> bundle.  Defaults to @DAGOLDEN.
-* C<version_regexp> — given to L<Git::NextVersion>.  Default
-is '^release-(.+)$'
+* C<tag_format> — given to C<Git::Tag>. Default is 'v%v'.
+* C<weaver_config> — specifies a L<Pod::Weaver> bundle. Defaults to @ODYNIEC.
+* C<version_regexp> — given to L<Git::NextVersion>. Default is '^v(.+)$'
 * C<no_git> — bypass all git-dependent plugins
 * C<no_critic> — omit C<Test::Perl::Critic> tests
 * C<no_spellcheck> — omit C<Test::PodSpelling> tests
 * C<no_coverage> — omit PodCoverage tests
 * C<no_minimum_perl> — omit C<Test::MinimumVersion> tests
-* C<no_bugtracker> — DEPRECATED
 
 When running without git, C<GatherDir> is used instead of C<Git::GatherDir>,
 C<AutoVersion> is used instead of C<Git::NextVersion>, and all git check and
@@ -576,13 +556,13 @@ commit operations are disabled.
 This PluginBundle now supports C<ConfigSlicer>, so you can pass in options to the
 plugins used like this:
 
-  [@DAGOLDEN]
+  [@ODYNIEC]
   Test::MinimumVersion.max_target_perl = 5.014
   ExecDir.dir = scripts
 
 This PluginBundle also supports C<PluginRemover>, so dropping a plugin is as easy as this:
 
-  [@DAGOLDEN]
+  [@ODYNIEC]
   -remove = Test::Portability
 
 =head1 SEE ALSO

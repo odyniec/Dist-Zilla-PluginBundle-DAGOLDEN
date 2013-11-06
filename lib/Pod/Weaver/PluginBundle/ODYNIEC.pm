@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-package Pod::Weaver::PluginBundle::DAGOLDEN;
+package Pod::Weaver::PluginBundle::ODYNIEC;
 # VERSION
 
 use Pod::Weaver 4; # he played knick-knack on my door
@@ -30,18 +30,18 @@ END
 sub mvp_bundle_config {
     my @plugins;
     push @plugins, (
-        [ '@DAGOLDEN/SingleEncoding', _exp('-SingleEncoding'), {} ],
-        [ '@DAGOLDEN/WikiDoc',        _exp('-WikiDoc'),        {} ],
-        [ '@DAGOLDEN/CorePrep',       _exp('@CorePrep'),       {} ],
-        [ '@DAGOLDEN/Name',           _exp('Name'),            {} ],
-        [ '@DAGOLDEN/Version',        _exp('Version'),         {} ],
+        [ '@ODYNIEC/SingleEncoding', _exp('-SingleEncoding'), {} ],
+        [ '@ODYNIEC/WikiDoc',        _exp('-WikiDoc'),        {} ],
+        [ '@ODYNIEC/CorePrep',       _exp('@CorePrep'),       {} ],
+        [ '@ODYNIEC/Name',           _exp('Name'),            {} ],
+        [ '@ODYNIEC/Version',        _exp('Version'),         {} ],
 
-        [ '@DAGOLDEN/Prelude',     _exp('Region'),  { region_name => 'prelude' } ],
-        [ '@DAGOLDEN/Synopsis',    _exp('Generic'), { header      => 'SYNOPSIS' } ],
-        [ '@DAGOLDEN/Description', _exp('Generic'), { header      => 'DESCRIPTION' } ],
-        [ '@DAGOLDEN/Usage',       _exp('Generic'), { header      => 'USAGE' } ],
-        [ '@DAGOLDEN/Overview',    _exp('Generic'), { header      => 'OVERVIEW' } ],
-        [ '@DAGOLDEN/Stability',   _exp('Generic'), { header      => 'STABILITY' } ],
+        [ '@ODYNIEC/Prelude',     _exp('Region'),  { region_name => 'prelude' } ],
+        [ '@ODYNIEC/Synopsis',    _exp('Generic'), { header      => 'SYNOPSIS' } ],
+        [ '@ODYNIEC/Description', _exp('Generic'), { header      => 'DESCRIPTION' } ],
+        [ '@ODYNIEC/Usage',       _exp('Generic'), { header      => 'USAGE' } ],
+        [ '@ODYNIEC/Overview',    _exp('Generic'), { header      => 'OVERVIEW' } ],
+        [ '@ODYNIEC/Stability',   _exp('Generic'), { header      => 'STABILITY' } ],
     );
 
     for my $plugin (
@@ -58,10 +58,10 @@ sub mvp_bundle_config {
 
     push @plugins,
       (
-        [ '@DAGOLDEN/Leftovers', _exp('Leftovers'), {} ],
-        [ '@DAGOLDEN/postlude', _exp('Region'), { region_name => 'postlude' } ],
+        [ '@ODYNIEC/Leftovers', _exp('Leftovers'), {} ],
+        [ '@ODYNIEC/postlude', _exp('Region'), { region_name => 'postlude' } ],
         [
-            '@DAGOLDEN/Support',
+            '@ODYNIEC/Support',
             _exp('Support'),
             {
                 perldoc            => 0,
@@ -72,16 +72,16 @@ sub mvp_bundle_config {
                 repository_content => $repo_intro
             }
         ],
-        [ '@DAGOLDEN/Authors',      _exp('Authors'),      {} ],
-        [ '@DAGOLDEN/Contributors', _exp('Contributors'), {} ],
-        [ '@DAGOLDEN/Legal',        _exp('Legal'),        {} ],
-        [ '@DAGOLDEN/List', _exp('-Transformer'), { 'transformer' => 'List' } ],
+        [ '@ODYNIEC/Authors',      _exp('Authors'),      {} ],
+        [ '@ODYNIEC/Contributors', _exp('Contributors'), {} ],
+        [ '@ODYNIEC/Legal',        _exp('Legal'),        {} ],
+        [ '@ODYNIEC/List', _exp('-Transformer'), { 'transformer' => 'List' } ],
       );
 
     return @plugins;
 }
 
-# ABSTRACT: DAGOLDEN's default Pod::Weaver config
+# ABSTRACT: ODYNIEC's default Pod::Weaver config
 # COPYRIGHT
 
 1;
@@ -114,7 +114,7 @@ following weaver.ini:
 
 =head1 USAGE
 
-This PluginBundle is used automatically with the C<@DAGOLDEN> L<Dist::Zilla>
+This PluginBundle is used automatically with the C<@ODYNIEC> L<Dist::Zilla>
 plugin bundle.
 
 It also has region collectors for:
