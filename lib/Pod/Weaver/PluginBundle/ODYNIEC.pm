@@ -9,7 +9,6 @@ use Pod::Weaver::Config::Assembler;
 
 # Dependencies
 use Pod::Weaver::Plugin::WikiDoc  ();
-use Pod::Weaver::Plugin::Encoding ();
 use Pod::Elemental::Transformer::List 0.101620 ();
 use Pod::Weaver::Section::Support 1.001        ();
 use Pod::Weaver::Section::Contributors 0.001   ();
@@ -92,8 +91,6 @@ sub mvp_bundle_config {
 
 This is a L<Pod::Weaver> PluginBundle.  It is roughly equivalent to the
 following weaver.ini:
-
-  [-Encoding]
 
   [-WikiDoc]
 
