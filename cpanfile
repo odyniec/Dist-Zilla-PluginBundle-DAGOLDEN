@@ -17,6 +17,7 @@ requires "Dist::Zilla::Plugin::OurPkgVersion" => "0.004";
 requires "Dist::Zilla::Plugin::PodWeaver" => "0";
 requires "Dist::Zilla::Plugin::ReadmeAnyFromPod" => "0";
 requires "Dist::Zilla::Plugin::TaskWeaver" => "0.101620";
+requires "Dist::Zilla::Plugin::Test::CPAN::Changes" => "0";
 requires "Dist::Zilla::Plugin::Test::Compile" => "2.036";
 requires "Dist::Zilla::Plugin::Test::MinimumVersion" => "2.000003";
 requires "Dist::Zilla::Plugin::Test::Perl::Critic" => "0";
@@ -70,6 +71,7 @@ on 'configure' => sub {
 
 on 'develop' => sub {
   requires "Pod::Coverage::TrustPod" => "0";
+  requires "Test::CPAN::Changes" => "0.19";
   requires "Test::CPAN::Meta" => "0";
   requires "Test::Pod" => "1.41";
   requires "Test::Pod::Coverage" => "1.08";
