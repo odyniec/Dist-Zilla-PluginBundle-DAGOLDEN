@@ -34,6 +34,7 @@ use Dist::Zilla::Plugin::PodWeaver ();
 use Dist::Zilla::Plugin::ReadmeAnyFromPod ();
 use Dist::Zilla::Plugin::TaskWeaver 0.101620           ();
 use Dist::Zilla::Plugin::Test::Compile 2.036           (); # various features
+use Dist::Zilla::Plugin::Test::CPAN::Changes ();
 use Dist::Zilla::Plugin::Test::MinimumVersion 2.000003 ();
 use Dist::Zilla::Plugin::Test::Perl::Critic ();
 use Dist::Zilla::Plugin::Test::PodSpelling 2.006001 ();    # Pod::Wordlist
@@ -275,6 +276,7 @@ sub configure {
                 fake_home => 1,   # Fake $ENV{HOME} just in case
             }
         ],
+        'Test::CPAN::Changes',  # xt/release/cpan-changes.t
 
         # Metadata
         (
@@ -448,6 +450,7 @@ It is roughly equivalent to the following dist.ini:
   [Test::Version]     ; xt/release/test-version.t
   [Test::Compile]     ; xt/author/00-compile.t
   fake_home = 1       ; Fake $ENV{HOME} just in case
+  [Test::CPAN::Changes]   ; xt/release/cpan-changes.t
 
   ; Metadata
   [AutoPrereqs]       ; Find prereqs from code (core)
