@@ -51,10 +51,10 @@ sub mvp_multivalue_args { qw/stopwords/ }
 
 has stopwords => (
     is      => 'ro',
-    isa     => 'ArrayRef',
+    isa     => 'Maybe[ArrayRef]',
     lazy    => 1,
-    default => sub {
-        exists $_[0]->payload->{stopwords} ? $_[0]->payload->{stopwords} : [];
+    default => sub { 
+        exists $_[0]->payload->{stopwords} ? $_[0]->payload->{stopwords} : undef;
     },
 );
 
@@ -253,7 +253,7 @@ sub configure {
         ),
         (
             $self->no_spellcheck ? ()
-            : [ 'Test::PodSpelling' => { stopwords => $self->stopwords } ]
+            : [ 'Test::PodSpelling' => $self->stopwords ? { stopwords => $self->stopwords } : () ]
             # xt/author/pod-spell.t
         ),
         (
